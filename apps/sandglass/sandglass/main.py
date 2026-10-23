@@ -12,14 +12,12 @@ from pydantic import BaseModel
 
 from . import enclave, secrets
 from .bootstrap import prepare_engine
-from .paths import has_bundled_runtime, prepend_bundled_path
+from .paths import app_root, ensure_tool_path, has_bundled_runtime, prepend_bundled_path
 from .pty_session import PtyManager
 from .runtime import ensure_colima
 
-# Prefer App-bundled engine binaries when present
+ensure_tool_path()
 prepend_bundled_path()
-
-from .paths import app_root
 
 ROOT = app_root()
 STATIC = ROOT / "static"

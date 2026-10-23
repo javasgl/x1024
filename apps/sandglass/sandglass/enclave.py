@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 from dataclasses import dataclass
 from typing import Any
 
+from .paths import ensure_tool_path, which_tool
 from .runtime import detect_runtime
 
 
@@ -47,10 +47,12 @@ def _run(args: list[str], timeout: float = 8) -> subprocess.CompletedProcess[str
 
 
 def enclave_bin() -> str | None:
-    return shutil.which("enclave")
+    ensure_tool_path()
+    return which_tool("enclave")
 
 
 def check_health() -> HealthStatus:
+    ensure_tool_path()
     hints: list[str] = []
     path = enclave_bin()
     enclave_ok = False

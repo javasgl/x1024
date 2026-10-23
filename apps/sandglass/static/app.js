@@ -223,7 +223,9 @@
       btn.disabled = true;
       btn.textContent = "启动中…";
     }
-    if (showProgress) showToast("正在启动沙箱引擎，请稍候…", true);
+    if (showProgress) {
+      showToast("正在准备沙箱引擎（首次可能自动安装，需几分钟）…", true);
+    }
     try {
       const res = await api("/api/runtime/prepare", { method: "POST", body: "{}" });
       await refreshHealth();
