@@ -285,6 +285,40 @@
     }
   }
 
+  function openLoadingTerminal(tool, projectDir) {
+    disposeTerminalSoft();
+    const host = $("#terminal");
+    if (!host) return;
+    host.innerHTML = "";
+    if (typeof Terminal === "undefined") {
+      host.innerHTML = `<div class="empty" style="color:#d7e2d9">终端组件未加载</div>`;
+      return null;
+    }
+    const term = new Terminal({
+      cursorBlink: true,
+      fontSize: 13,
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+      theme: { background: "#0d120f", foreground: "#d7e2d9", cursor: "#8fcea8" },
+    });
+    const FitCtor = window.FitAddon?.FitAddon || window.FitAddon;
+    const fit = FitCtor ? new FitCtor() : null;
+    if (fit) term.loadAddon(fit);
+    term.open(host);
+    if (fit) fit.fit();
+    state.term = term;
+    state.fit = fit;
+    term.writeln("\x1b[32m┌─ Sandglass 沙箱终端 ─────────────────────\x1b[0m");
+    term.writeln(`\x1b[32m│\x1b[0m 工具: \x1b[1m${tool}\x1b[0m`);
+    term.writeln(`\x1b[32m│\x1b[0m 项目: ${projectDir}`);
+    term.writeln("\x1b[32m│\x1b[0m 模式: \x1b[33m在 App 内使用\x1b[0m（隔离容器，无需另开本机终端）");
+    term.writeln("\x1b[32m└──────────────────────────────────────────\x1b[0m");
+    term.writeln("");
+    term.writeln("正在沙箱内启动 Agent，请稍候…");
+    term.writeln("（首次可能下载/构建镜像，输出会显示在此窗口）");
+    term.writeln("");
+    return term;
+  }
+
   async function launch() {
     const projectDir = ($("#project-dir")?.value || "").trim();
     if (!projectDir) {
@@ -301,31 +335,76 @@
       }
     }
     showError("");
-    showToast("正在启动会话…");
+    showToast("正在 App 内打开沙箱终端…");
+
+    // Switch into in-app terminal FIRST so usage feels inside the product
+    const title = $("#term-title");
+    if (title) title.textContent = `沙箱 · ${state.tool} · ${basename(projectDir)}`;
+    const sub = $("#term-sub");
+    if (sub) sub.textContent = "在 App 内使用 · 隔离容器 · 密钥留在本机";
+    setPage("terminal");
+    openLoadingTerminal(state.tool, projectDir);
+    setStep(1);
+
     try {
       const { id } = await api("/api/session/start", {
         method: "POST",
         body: JSON.stringify({
           projectDir,
           tool: state.tool,
-          cols: 120,
-          rows: 36,
+          cols: state.term?.cols || 120,
+          rows: state.term?.rows || 36,
         }),
       });
       state.ptyId = id;
-      const title = $("#term-title");
-      if (title) title.textContent = `沙箱 · ${state.tool} · ${basename(projectDir)}`;
-      const sub = $("#term-sub");
-      if (sub) sub.textContent = "隔离容器内 · 仅挂载所选项目 · 密钥留在本机";
-      setPage("terminal");
-      openTerminal(id);
-      setStep(1);
-      showToast("");
+      attachPtyToExistingTerminal(id);
+      showToast("已在沙箱内启动 — 请在下方终端中与 Agent 交互");
       refreshSessions();
     } catch (e) {
+      if (state.term) {
+        state.term.writeln("");
+        state.term.writeln(`\x1b[31m启动失败：${String(e.message || e)}\x1b[0m`);
+        state.term.writeln("仍停留在 App 内沙箱页。可返回「新建沙箱」重试。");
+      }
       showError(String(e.message || e));
-      showToast("");
+      showToast("沙箱启动失败（见终端输出）", true);
     }
+  }
+
+  function attachPtyToExistingTerminal(id) {
+    const term = state.term;
+    if (!term) {
+      openTerminal(id);
+      return;
+    }
+    if (state.ws) {
+      try {
+        state.ws.close();
+      } catch (_) {}
+    }
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${proto}://${location.host}/ws/pty/${id}`);
+    ws.binaryType = "arraybuffer";
+    state.ws = ws;
+    ws.onmessage = (ev) => {
+      if (typeof ev.data === "string") term.write(ev.data);
+      else term.write(new Uint8Array(ev.data));
+    };
+    ws.onclose = () => {
+      term.writeln("\r\n\x1b[33m[沙箱会话已结束 — 仍在 App 内，可新建会话]\x1b[0m");
+    };
+    term.onData((data) => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+    });
+    const fit = state.fit;
+    const resize = () => {
+      if (fit) fit.fit();
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(`\x00resize:${term.cols},${term.rows}`);
+      }
+    };
+    window.addEventListener("resize", resize);
+    setTimeout(resize, 50);
   }
 
   function openTerminal(id) {

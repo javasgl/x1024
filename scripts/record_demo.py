@@ -81,7 +81,10 @@ def main() -> int:
             page.click('button[data-tool="codex"]')
             page.wait_for_timeout(1000)
             page.click("#to-step-3")
-            page.wait_for_timeout(2200)
+            page.wait_for_timeout(1600)
+            # Enter in-app sandbox terminal (may fail engine start; UI still shows in-app use)
+            page.click("#launch")
+            page.wait_for_timeout(3500)
 
             # Host-side secrets vault
             page.click('button[data-nav="secrets"]')
