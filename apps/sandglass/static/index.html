@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sandglass</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div>
+          <div class="brand-mark">Sandglass</div>
+          <div class="brand-sub">在沙箱里跑 Agent，密钥留在本机</div>
+        </div>
+        <nav class="nav">
+          <button data-nav="sessions" class="active">会话</button>
+          <button data-nav="new">新建</button>
+          <button data-nav="secrets">密钥</button>
+          <button data-nav="settings">状态</button>
+        </nav>
+      </aside>
+      <main class="main">
+        <p id="error" class="error hidden"></p>
+
+        <section id="page-sessions">
+          <div class="page-head">
+            <div>
+              <h1>会话</h1>
+              <p>在隔离环境中运行 Claude Code、Codex 等 Agent，项目文件仍在你本机。</p>
+            </div>
+            <button class="btn" data-goto="new">在沙箱中打开项目</button>
+          </div>
+          <div id="ready-warn" class="notice warn hidden" style="margin-bottom: 16px">
+            环境未就绪。请到「状态」页按提示安装 Docker / Enclave。
+          </div>
+          <div class="panel session-grid" id="session-list">
+            <div class="empty">暂无运行中的会话。</div>
+          </div>
+        </section>
+
+        <section id="page-new" class="hidden">
+          <div class="page-head">
+            <div>
+              <h1>新建会话</h1>
+              <p>三步即可：选项目、选 Agent、启动沙箱。</p>
+            </div>
+          </div>
+          <div class="panel wizard">
+            <div class="steps">
+              <div class="step-pill on" data-step-pill="1">1 项目</div>
+              <div class="step-pill" data-step-pill="2">2 Agent</div>
+              <div class="step-pill" data-step-pill="3">3 启动</div>
+            </div>
+            <div id="wiz-1" class="field">
+              <label>项目文件夹</label>
+              <input id="project-dir" placeholder="选择或粘贴代码目录路径" />
+              <div class="row-actions">
+                <button class="btn secondary" id="pick-folder">选择文件夹</button>
+                <button class="btn" id="to-step-2">下一步</button>
+              </div>
+            </div>
+            <div id="wiz-2" class="hidden">
+              <div class="tool-grid" id="tool-grid"></div>
+              <div class="row-actions" style="margin-top: 14px">
+                <button class="btn secondary" id="back-1">上一步</button>
+                <button class="btn" id="to-step-3">下一步</button>
+              </div>
+            </div>
+            <div id="wiz-3" class="hidden">
+              <div class="notice" id="confirm-text"></div>
+              <div class="row-actions">
+                <button class="btn secondary" id="back-2">上一步</button>
+                <button class="btn" id="launch">启动沙箱</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="page-terminal" class="hidden terminal-page">
+          <div class="page-head">
+            <div>
+              <h1 id="term-title">会话终端</h1>
+              <p>Agent 在沙箱内运行。密钥从本机注入，无需在沙箱内粘贴。</p>
+            </div>
+            <button class="btn danger" id="kill-term">结束终端</button>
+          </div>
+          <div class="terminal-wrap" id="terminal"></div>
+        </section>
+
+        <section id="page-secrets" class="hidden">
+          <div class="page-head">
+            <div>
+              <h1>密钥</h1>
+              <p>密钥只保存在本机 Enclave secrets。沙箱内无需填写。</p>
+            </div>
+          </div>
+          <div class="panel wizard">
+            <div class="notice" id="secret-status">加载中…</div>
+            <div class="field">
+              <label>Anthropic API Key</label>
+              <input id="key-anthropic" type="password" placeholder="sk-ant-…（留空则不改）" />
+            </div>
+            <div class="field">
+              <label>OpenAI API Key</label>
+              <input id="key-openai" type="password" placeholder="sk-…（留空则不改）" />
+            </div>
+            <button class="btn" id="save-secrets">保存到本机</button>
+            <div id="secret-msg" class="notice hidden"></div>
+          </div>
+        </section>
+
+        <section id="page-settings" class="hidden">
+          <div class="page-head">
+            <div>
+              <h1>状态</h1>
+              <p>启动沙箱前需要本机 Docker 与 Enclave CLI。</p>
+            </div>
+            <button class="btn secondary" id="recheck">重新检测</button>
+          </div>
+          <div class="panel health-list" id="health-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
