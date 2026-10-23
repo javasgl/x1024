@@ -445,12 +445,18 @@
       ev.preventDefault();
       showToast("正在打开文件夹选择…");
       try {
-        const res = await api("/api/pick-folder", { method: "POST", body: "{}" });
-        if (res.path) {
+        let res = null;
+        // Desktop (.app / run_desktop): native dialog via pywebview
+        if (window.pywebview?.api?.pick_folder) {
+          res = await window.pywebview.api.pick_folder();
+        } else {
+          res = await api("/api/pick-folder", { method: "POST", body: "{}" });
+        }
+        if (res && res.path) {
           $("#project-dir").value = res.path;
           showToast(`已选择：${res.path}`);
         } else {
-          showToast(res.error || "无法弹出系统选文件夹，请直接在上方粘贴路径", true);
+          showToast((res && res.error) || "已取消，或请直接在上方粘贴路径", true);
         }
       } catch (e) {
         showToast("选文件夹失败，请直接粘贴路径", true);

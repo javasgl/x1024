@@ -100,24 +100,10 @@ def api_secrets_write(body: SecretsBody) -> dict[str, str]:
 
 @app.post("/api/pick-folder")
 def api_pick_folder() -> dict[str, str | None]:
-    """Native folder dialog via Tk when available; otherwise return null."""
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-    except Exception:  # noqa: BLE001
-        return {"path": None, "error": "当前环境无法弹出选文件夹窗口，请直接粘贴路径"}
+    """Native folder dialog (macOS osascript / Tk)."""
+    from .pick_folder import pick_folder
 
-    root = tk.Tk()
-    root.withdraw()
-    try:
-        root.attributes("-topmost", True)
-    except Exception:  # noqa: BLE001
-        pass
-    try:
-        path = filedialog.askdirectory(title="选择项目文件夹")
-    finally:
-        root.destroy()
-    return {"path": path or None}
+    return pick_folder()
 
 
 @app.post("/api/session/start")
