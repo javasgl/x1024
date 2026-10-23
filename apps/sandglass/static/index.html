@@ -10,17 +10,31 @@
   <body>
     <div class="app-shell">
       <aside class="sidebar">
-        <div>
+        <div class="brand-block">
           <div class="brand-mark">Sandglass</div>
-          <div class="brand-sub">自带沙箱引擎 · 密钥留在本机</div>
+          <div class="brand-sub">Agent 安全沙箱</div>
+          <div class="shield-pill" id="shield-pill" title="隔离状态">
+            <span class="shield-dot"></span>
+            <span id="shield-text">检测沙箱…</span>
+          </div>
         </div>
         <nav class="nav">
-          <button type="button" data-nav="sessions" class="active">会话</button>
-          <button type="button" data-nav="new">新建</button>
-          <button type="button" data-nav="secrets">密钥</button>
-          <button type="button" data-nav="settings">状态</button>
+          <button type="button" data-nav="sessions" class="active">沙箱会话</button>
+          <button type="button" data-nav="new">新建沙箱</button>
+          <button type="button" data-nav="secrets">本机密钥库</button>
+          <button type="button" data-nav="settings">引擎状态</button>
         </nav>
+        <div class="sidebar-foot">
+          <div class="foot-title">隔离边界</div>
+          <ul class="foot-list">
+            <li>Agent 在容器内运行</li>
+            <li>仅挂载你选的项目</li>
+            <li>密钥不进沙箱</li>
+            <li>出站网络受控</li>
+          </ul>
+        </div>
       </aside>
+
       <main class="main">
         <p id="error" class="error hidden"></p>
         <p id="toast" class="notice hidden" style="margin-bottom: 12px"></p>
@@ -28,42 +42,65 @@
         <section id="page-sessions">
           <div class="page-head">
             <div>
-              <h1>会话</h1>
-              <p>在隔离环境中运行 Claude Code、Codex 等 Agent，项目文件仍在你本机。</p>
+              <h1>沙箱会话</h1>
+              <p>每个会话都是独立隔离容器：Agent 只能动你指定的项目，碰不到本机密钥与其它目录。</p>
             </div>
-            <button type="button" class="btn" data-goto="new">在沙箱中打开项目</button>
+            <button type="button" class="btn" data-goto="new">新建沙箱会话</button>
           </div>
-          <div id="ready-warn" class="notice warn hidden" style="margin-bottom: 16px">
-            沙箱引擎尚未就绪。请到「状态」页点击「启动沙箱引擎」。
+
+          <div class="boundary-board" aria-label="沙箱边界示意">
+            <div class="zone zone-host">
+              <div class="zone-label">本机（受保护）</div>
+              <div class="zone-items">
+                <span>SSH / 云密钥</span>
+                <span>其它项目</span>
+                <span>系统文件</span>
+              </div>
+            </div>
+            <div class="zone-arrow" aria-hidden="true">隔离</div>
+            <div class="zone zone-box">
+              <div class="zone-label">沙箱内（Agent）</div>
+              <div class="zone-items">
+                <span>所选项目目录</span>
+                <span>Claude / Codex…</span>
+                <span>受限网络</span>
+              </div>
+            </div>
           </div>
+
+          <div id="ready-warn" class="notice warn hidden" style="margin: 16px 0">
+            沙箱引擎尚未就绪。请到「引擎状态」启动后再创建会话。
+          </div>
+
           <div class="panel session-grid" id="session-list">
-            <div class="empty">暂无运行中的会话。</div>
+            <div class="empty">还没有沙箱会话。点击右上角，把 Agent 放进隔离环境。</div>
           </div>
         </section>
 
         <section id="page-new" class="hidden">
           <div class="page-head">
             <div>
-              <h1>新建会话</h1>
-              <p>三步即可：选项目、选 Agent、启动沙箱。</p>
+              <h1>新建沙箱</h1>
+              <p>选好项目与 Agent 后，将在隔离容器中启动——不是直接在本机裸跑。</p>
             </div>
           </div>
           <div class="panel wizard">
             <div class="steps">
               <div class="step-pill on" data-step-pill="1">1 项目</div>
               <div class="step-pill" data-step-pill="2">2 Agent</div>
-              <div class="step-pill" data-step-pill="3">3 启动</div>
+              <div class="step-pill" data-step-pill="3">3 确认隔离</div>
             </div>
             <div id="wiz-1" class="field">
-              <label>项目文件夹</label>
-              <input id="project-dir" placeholder="粘贴项目路径，例如 /Users/你/项目" />
+              <label>允许沙箱访问的项目目录</label>
+              <input id="project-dir" placeholder="粘贴路径，例如 /Users/你/项目" />
               <div class="row-actions">
                 <button type="button" class="btn secondary" id="pick-folder">选择文件夹</button>
                 <button type="button" class="btn" id="to-step-2">下一步</button>
               </div>
-              <p class="meta">若「选择文件夹」不可用，直接粘贴路径即可。</p>
+              <p class="meta">沙箱默认只能读写这个目录，其它本机路径对 Agent 不可见。</p>
             </div>
             <div id="wiz-2" class="hidden">
+              <p class="meta" style="margin-bottom: 10px">选择在沙箱内运行的 Agent</p>
               <div class="tool-grid" id="tool-grid"></div>
               <div class="row-actions" style="margin-top: 14px">
                 <button type="button" class="btn secondary" id="back-1">上一步</button>
@@ -72,43 +109,66 @@
             </div>
             <div id="wiz-3" class="hidden">
               <div class="notice" id="confirm-text"></div>
+              <div class="isolate-checklist">
+                <div class="check-ok">容器隔离启动</div>
+                <div class="check-ok">项目目录按需挂载</div>
+                <div class="check-ok">本机密钥库不进入沙箱</div>
+                <div class="check-ok">出站访问走策略网关</div>
+              </div>
               <div class="row-actions">
                 <button type="button" class="btn secondary" id="back-2">上一步</button>
-                <button type="button" class="btn" id="launch">启动沙箱</button>
+                <button type="button" class="btn" id="launch">进入沙箱启动</button>
               </div>
             </div>
           </div>
         </section>
 
         <section id="page-terminal" class="hidden terminal-page">
+          <div class="sandbox-banner">
+            <strong>你正在沙箱内</strong>
+            <span>以下终端属于隔离容器；本机密钥与未挂载目录对 Agent 不可见。</span>
+          </div>
           <div class="page-head">
             <div>
-              <h1 id="term-title">会话终端</h1>
-              <p>Agent 在沙箱内运行。密钥从本机注入，无需在沙箱内粘贴。</p>
+              <h1 id="term-title">沙箱终端</h1>
+              <p id="term-sub">隔离会话进行中</p>
             </div>
-            <button type="button" class="btn danger" id="kill-term">结束终端</button>
+            <button type="button" class="btn danger" id="kill-term">结束并退出沙箱</button>
           </div>
-          <div class="terminal-wrap" id="terminal"></div>
+          <div class="terminal-frame">
+            <div class="terminal-chrome">
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-dot"></span>
+              <span class="chrome-title">sandbox · isolated</span>
+            </div>
+            <div class="terminal-wrap" id="terminal"></div>
+          </div>
         </section>
 
         <section id="page-secrets" class="hidden">
           <div class="page-head">
             <div>
-              <h1>密钥</h1>
-              <p>密钥只保存在本机，不会要求你在沙箱里填写。</p>
+              <h1>本机密钥库</h1>
+              <p>密钥写在宿主机，由网关按需注入。沙箱进程里看不到明文，也无需在 Agent 里粘贴。</p>
             </div>
+          </div>
+          <div class="vault-callout">
+            <div class="vault-side">宿主机保险箱</div>
+            <div class="vault-mid">→ 网关注入 →</div>
+            <div class="vault-side muted">沙箱内无明文密钥</div>
           </div>
           <div class="panel wizard">
             <div class="notice" id="secret-status">加载中…</div>
             <div class="field">
-              <label>Anthropic API Key</label>
+              <label>Anthropic API Key（仅存本机）</label>
               <input id="key-anthropic" type="password" placeholder="sk-ant-…（留空则不改）" />
             </div>
             <div class="field">
-              <label>OpenAI API Key</label>
+              <label>OpenAI API Key（仅存本机）</label>
               <input id="key-openai" type="password" placeholder="sk-…（留空则不改）" />
             </div>
-            <button type="button" class="btn" id="save-secrets">保存到本机</button>
+            <button type="button" class="btn" id="save-secrets">保存到本机密钥库</button>
             <div id="secret-msg" class="notice hidden"></div>
           </div>
         </section>
@@ -116,8 +176,8 @@
         <section id="page-settings" class="hidden">
           <div class="page-head">
             <div>
-              <h1>状态</h1>
-              <p>Sandglass 自带沙箱引擎。未就绪时点下方按钮启动即可。</p>
+              <h1>引擎状态</h1>
+              <p>沙箱依赖本地轻量引擎。就绪后即可创建隔离会话。</p>
             </div>
             <div class="row-actions">
               <button type="button" class="btn" id="start-engine">启动沙箱引擎</button>

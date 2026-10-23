@@ -100,7 +100,7 @@
       const label = state.tools.find((t) => t.id === state.tool)?.label || state.tool;
       const el = $("#confirm-text");
       if (el) {
-        el.innerHTML = `将在沙箱中打开 <strong>${basename($("#project-dir")?.value)}</strong>，使用 <strong>${label}</strong>。密钥从本机注入。`;
+        el.innerHTML = `即将把 <strong>${label}</strong> 放进隔离容器，仅挂载 <strong>${basename($("#project-dir")?.value)}</strong>。本机密钥与其它目录对 Agent 不可见。`;
       }
     }
   }
@@ -123,7 +123,7 @@
     const box = $("#session-list");
     if (!box) return;
     if (!state.sessions.length) {
-      box.innerHTML = `<div class="empty">暂无运行中的会话。点击右上角开始。</div>`;
+      box.innerHTML = `<div class="empty">还没有沙箱会话。点击右上角，把 Agent 放进隔离环境。</div>`;
       return;
     }
     box.innerHTML = state.sessions
@@ -131,15 +131,32 @@
         (s) => `
       <div class="session-card">
         <div>
-          <h3><span class="badge">${s.tool || "agent"}</span>${basename(s.projectDir) || s.name}</h3>
-          <div class="meta">${s.status || "running"} · ${s.name}${s.createdAt ? " · " + s.createdAt : ""}</div>
+          <h3>
+            <span class="badge iso">隔离中</span>
+            <span class="badge">${s.tool || "agent"}</span>
+            ${basename(s.projectDir) || s.name}
+          </h3>
+          <div class="meta">容器会话 · ${s.status || "running"} · ${s.name}${s.createdAt ? " · " + s.createdAt : ""}</div>
         </div>
         <div class="row-actions">
-          <button type="button" class="btn secondary" data-stop="${s.name}">停止</button>
+          <button type="button" class="btn secondary" data-stop="${s.name}">停止沙箱</button>
         </div>
       </div>`
       )
       .join("");
+  }
+
+  function updateShield(h) {
+    const pill = $("#shield-pill");
+    const text = $("#shield-text");
+    if (!pill || !text) return;
+    if (h?.ready) {
+      pill.classList.remove("warn");
+      text.textContent = "沙箱引擎防护中";
+    } else {
+      pill.classList.add("warn");
+      text.textContent = "沙箱引擎未就绪";
+    }
   }
 
   function renderHealth() {
@@ -151,20 +168,20 @@
       return;
     }
     const engineOk = !!h.dockerOk;
-    const engineMode = h.engineMode === "bundled" ? "内置" : "本机开发环境";
+    const engineMode = h.engineMode === "bundled" ? "内置引擎" : "本机引擎";
     box.innerHTML = `
       <div class="health-row ${engineOk ? "ok" : "bad"}">
         <div>
-          <strong>沙箱引擎</strong>
+          <strong>沙箱引擎（容器隔离）</strong>
           <div class="meta">${h.dockerMessage || ""}</div>
-          <div class="meta">来源：${engineMode}</div>
+          <div class="meta">来源：${engineMode} · Agent 不在本机裸跑</div>
         </div>
-        <span class="badge ${engineOk ? "" : "warn"}">${engineOk ? "就绪" : "未就绪"}</span>
+        <span class="badge ${engineOk ? "" : "warn"}">${engineOk ? "防护中" : "未就绪"}</span>
       </div>
       <div class="health-row ${h.enclaveOk ? "ok" : "bad"}">
         <div>
-          <strong>Agent 运行时</strong>
-          <div class="meta">${h.enclaveOk ? h.enclaveVersion || "已就绪" : "尚未就绪"}</div>
+          <strong>隔离运行时</strong>
+          <div class="meta">${h.enclaveOk ? h.enclaveVersion || "可创建隔离会话" : "尚未就绪"}</div>
         </div>
         <span class="badge ${h.enclaveOk ? "" : "warn"}">${h.enclaveOk ? "就绪" : "未就绪"}</span>
       </div>
@@ -176,6 +193,7 @@
     `;
     const warn = $("#ready-warn");
     if (warn) warn.classList.toggle("hidden", !!h.ready);
+    updateShield(h);
   }
 
   async function refreshHealth() {
@@ -296,7 +314,9 @@
       });
       state.ptyId = id;
       const title = $("#term-title");
-      if (title) title.textContent = `${state.tool} · ${basename(projectDir)}`;
+      if (title) title.textContent = `沙箱 · ${state.tool} · ${basename(projectDir)}`;
+      const sub = $("#term-sub");
+      if (sub) sub.textContent = "隔离容器内 · 仅挂载所选项目 · 密钥留在本机";
       setPage("terminal");
       openTerminal(id);
       setStep(1);

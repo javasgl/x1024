@@ -67,32 +67,31 @@ def main() -> int:
             page.goto(URL, wait_until="networkidle")
             page.wait_for_timeout(1200)
 
-            # Sessions
+            # Sessions — isolation board visible
             page.click('button[data-nav="sessions"]')
-            page.wait_for_timeout(1500)
+            page.wait_for_timeout(2000)
 
-            # New wizard
+            # New sandbox wizard
             page.click('button[data-goto="new"]')
-            page.wait_for_timeout(1000)
+            page.wait_for_timeout(1200)
             page.fill("#project-dir", str(ROOT))
-            page.wait_for_timeout(800)
+            page.wait_for_timeout(900)
             page.click("#to-step-2")
-            page.wait_for_timeout(1200)
+            page.wait_for_timeout(1300)
             page.click('button[data-tool="codex"]')
-            page.wait_for_timeout(900)
-            page.click("#to-step-3")
-            page.wait_for_timeout(1600)
-
-            # Secrets
-            page.click('button[data-nav="secrets"]')
             page.wait_for_timeout(1000)
-            page.fill("#key-anthropic", "sk-ant-••••••••••••")
-            page.wait_for_timeout(900)
-            page.fill("#key-openai", "sk-••••••••••••")
-            page.wait_for_timeout(1200)
-            # show fields only — do not persist demo placeholders
+            page.click("#to-step-3")
+            page.wait_for_timeout(2200)
 
-            # Settings / engine status
+            # Host-side secrets vault
+            page.click('button[data-nav="secrets"]')
+            page.wait_for_timeout(1600)
+            page.fill("#key-anthropic", "sk-ant-••••••••••••")
+            page.wait_for_timeout(800)
+            page.fill("#key-openai", "sk-••••••••••••")
+            page.wait_for_timeout(1400)
+
+            # Engine status
             page.click('button[data-nav="settings"]')
             page.wait_for_timeout(1800)
             page.click("#recheck")
@@ -100,7 +99,7 @@ def main() -> int:
 
             # Back to sessions
             page.click('button[data-nav="sessions"]')
-            page.wait_for_timeout(1500)
+            page.wait_for_timeout(1800)
 
             page.close()
             context.close()
