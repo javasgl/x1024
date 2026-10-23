@@ -30,11 +30,19 @@ python run_desktop.py
 
 打开后走：状态 → 密钥 → 新建会话。
 
+## 打成可双击的 macOS App
+
+```bash
+# 本机最好已有 colima/docker/enclave，脚本会拷进 runtime/ 一并打包
+./scripts/build_macos_app.sh
+open apps/sandglass/dist/Sandglass.app
+```
+
 ## 分发路线图
 
-1. **现在** — UI + 引擎编排；开发机可用系统 Colima，或 `prepare_runtime` 模拟内置  
-2. **下一步** — PyInstaller / Briefcase 打成 macOS `.app`，`runtime/` 打进 Resources  
-3. **再下一步** — 预置 Lima VM 镜像，真正做到首次双击也无需再下载  
+1. **现在** — UI + 引擎编排 + `Sandglass.app` 打包脚本  
+2. **下一步** — 签名/公证；预置 Lima VM 镜像，首次双击也不再联网下载  
+3. **再下一步** — 安装器（dmg）与自动更新  
 
 ## 目录
 

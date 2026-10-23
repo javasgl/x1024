@@ -7,10 +7,13 @@ from pathlib import Path
 
 
 def app_root() -> Path:
-    """Install / source root (apps/sandglass)."""
-    # PyInstaller / frozen
+    """Install / source root (apps/sandglass), or PyInstaller bundle root."""
     if getattr(sys, "frozen", False):
-        return Path(sys._MEIPASS) if hasattr(sys, "_MEIPASS") else Path(sys.executable).resolve().parent
+        # onedir / .app: binaries and datas live next to the executable or in _MEIPASS
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent.parent
 
 

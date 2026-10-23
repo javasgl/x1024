@@ -7,3 +7,6 @@
 **/src-tauri/target/
 *.egg-info/
 apps/sandglass/runtime/
+apps/sandglass/build/
+apps/sandglass/dist/
+*.spec.bak

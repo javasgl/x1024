@@ -19,8 +19,13 @@ from .runtime import ensure_colima
 # Prefer App-bundled engine binaries when present
 prepend_bundled_path()
 
-ROOT = Path(__file__).resolve().parent.parent
+from .paths import app_root
+
+ROOT = app_root()
 STATIC = ROOT / "static"
+if not STATIC.is_dir():
+    # Dev / editable fallback
+    STATIC = Path(__file__).resolve().parent.parent / "static"
 
 app = FastAPI(title="Sandglass", version="0.1.0")
 ptys = PtyManager()
