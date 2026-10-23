@@ -57,7 +57,7 @@ def check_health() -> HealthStatus:
     version: str | None = None
 
     if not path:
-        hints.append("安装 Enclave：brew install eclipse-enclave")
+        hints.append("Agent 运行时未就绪。正式版会内置；开发期请运行 prepare_runtime 脚本。")
     else:
         try:
             out = _run([path, "version", "--json"])

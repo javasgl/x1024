@@ -107,7 +107,7 @@ def api_pick_folder() -> dict[str, str | None]:
         import tkinter as tk
         from tkinter import filedialog
     except Exception:  # noqa: BLE001
-        return {"path": None, "error": "本机 Python 无 Tk，请直接粘贴路径"}  # type: ignore[dict-item]
+        return {"path": None, "error": "当前环境无法弹出选文件夹窗口，请直接粘贴路径"}
 
     root = tk.Tk()
     root.withdraw()

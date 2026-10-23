@@ -4,13 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sandglass</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css" />
+    <link rel="stylesheet" href="/static/vendor/xterm.min.css" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
@@ -18,17 +12,18 @@
       <aside class="sidebar">
         <div>
           <div class="brand-mark">Sandglass</div>
-          <div class="brand-sub">在沙箱里跑 Agent，密钥留在本机</div>
+          <div class="brand-sub">自带沙箱引擎 · 密钥留在本机</div>
         </div>
         <nav class="nav">
-          <button data-nav="sessions" class="active">会话</button>
-          <button data-nav="new">新建</button>
-          <button data-nav="secrets">密钥</button>
-          <button data-nav="settings">状态</button>
+          <button type="button" data-nav="sessions" class="active">会话</button>
+          <button type="button" data-nav="new">新建</button>
+          <button type="button" data-nav="secrets">密钥</button>
+          <button type="button" data-nav="settings">状态</button>
         </nav>
       </aside>
       <main class="main">
         <p id="error" class="error hidden"></p>
+        <p id="toast" class="notice hidden" style="margin-bottom: 12px"></p>
 
         <section id="page-sessions">
           <div class="page-head">
@@ -36,10 +31,10 @@
               <h1>会话</h1>
               <p>在隔离环境中运行 Claude Code、Codex 等 Agent，项目文件仍在你本机。</p>
             </div>
-            <button class="btn" data-goto="new">在沙箱中打开项目</button>
+            <button type="button" class="btn" data-goto="new">在沙箱中打开项目</button>
           </div>
           <div id="ready-warn" class="notice warn hidden" style="margin-bottom: 16px">
-            环境未就绪。请到「状态」页安装并启动 Colima（轻量容器）与 Enclave。
+            沙箱引擎尚未就绪。请到「状态」页点击「启动沙箱引擎」。
           </div>
           <div class="panel session-grid" id="session-list">
             <div class="empty">暂无运行中的会话。</div>
@@ -61,24 +56,25 @@
             </div>
             <div id="wiz-1" class="field">
               <label>项目文件夹</label>
-              <input id="project-dir" placeholder="选择或粘贴代码目录路径" />
+              <input id="project-dir" placeholder="粘贴项目路径，例如 /Users/你/项目" />
               <div class="row-actions">
-                <button class="btn secondary" id="pick-folder">选择文件夹</button>
-                <button class="btn" id="to-step-2">下一步</button>
+                <button type="button" class="btn secondary" id="pick-folder">选择文件夹</button>
+                <button type="button" class="btn" id="to-step-2">下一步</button>
               </div>
+              <p class="meta">若「选择文件夹」不可用，直接粘贴路径即可。</p>
             </div>
             <div id="wiz-2" class="hidden">
               <div class="tool-grid" id="tool-grid"></div>
               <div class="row-actions" style="margin-top: 14px">
-                <button class="btn secondary" id="back-1">上一步</button>
-                <button class="btn" id="to-step-3">下一步</button>
+                <button type="button" class="btn secondary" id="back-1">上一步</button>
+                <button type="button" class="btn" id="to-step-3">下一步</button>
               </div>
             </div>
             <div id="wiz-3" class="hidden">
               <div class="notice" id="confirm-text"></div>
               <div class="row-actions">
-                <button class="btn secondary" id="back-2">上一步</button>
-                <button class="btn" id="launch">启动沙箱</button>
+                <button type="button" class="btn secondary" id="back-2">上一步</button>
+                <button type="button" class="btn" id="launch">启动沙箱</button>
               </div>
             </div>
           </div>
@@ -90,7 +86,7 @@
               <h1 id="term-title">会话终端</h1>
               <p>Agent 在沙箱内运行。密钥从本机注入，无需在沙箱内粘贴。</p>
             </div>
-            <button class="btn danger" id="kill-term">结束终端</button>
+            <button type="button" class="btn danger" id="kill-term">结束终端</button>
           </div>
           <div class="terminal-wrap" id="terminal"></div>
         </section>
@@ -99,7 +95,7 @@
           <div class="page-head">
             <div>
               <h1>密钥</h1>
-              <p>密钥只保存在本机 Enclave secrets。沙箱内无需填写。</p>
+              <p>密钥只保存在本机，不会要求你在沙箱里填写。</p>
             </div>
           </div>
           <div class="panel wizard">
@@ -112,7 +108,7 @@
               <label>OpenAI API Key</label>
               <input id="key-openai" type="password" placeholder="sk-…（留空则不改）" />
             </div>
-            <button class="btn" id="save-secrets">保存到本机</button>
+            <button type="button" class="btn" id="save-secrets">保存到本机</button>
             <div id="secret-msg" class="notice hidden"></div>
           </div>
         </section>
@@ -121,11 +117,11 @@
           <div class="page-head">
             <div>
               <h1>状态</h1>
-              <p>正式版自带沙箱引擎。开发期可点「启动 Colima」，或先运行 prepare_runtime 脚本。</p>
+              <p>Sandglass 自带沙箱引擎。未就绪时点下方按钮启动即可。</p>
             </div>
             <div class="row-actions">
-              <button class="btn" id="start-colima">启动 Colima</button>
-              <button class="btn secondary" id="recheck">重新检测</button>
+              <button type="button" class="btn" id="start-engine">启动沙箱引擎</button>
+              <button type="button" class="btn secondary" id="recheck">重新检测</button>
             </div>
           </div>
           <div class="panel health-list" id="health-list"></div>
@@ -133,8 +129,8 @@
       </main>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
+    <script src="/static/vendor/xterm.min.js"></script>
+    <script src="/static/vendor/addon-fit.min.js"></script>
     <script src="/static/app.js"></script>
   </body>
 </html>
