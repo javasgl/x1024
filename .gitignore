@@ -10,3 +10,6 @@ apps/sandglass/runtime/
 apps/sandglass/build/
 apps/sandglass/dist/
 *.spec.bak
+
+demos/_raw/
+
