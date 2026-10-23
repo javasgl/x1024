@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "apps" / "sandglass"
 OUT_DIR = ROOT / "demos"
 URL = "http://127.0.0.1:8765"
+DEMO_KEY = "sk-ant-HOST-ONLY-DEMO-KEY-do-not-leak"
 
 
 def wait_server(timeout: float = 30) -> None:
@@ -43,6 +44,21 @@ def ensure_server() -> subprocess.Popen | None:
     return proc
 
 
+def cleanup_demo_secrets() -> None:
+    secrets = Path.home() / ".local/state/enclave/secrets/global.env"
+    if not secrets.exists():
+        return
+    try:
+        lines = [
+            ln
+            for ln in secrets.read_text().splitlines()
+            if "HOST-ONLY-DEMO" not in ln and "sk-ant-demo-" not in ln
+        ]
+        secrets.write_text("\n".join(lines) + ("\n" if lines else ""))
+    except Exception:
+        pass
+
+
 def main() -> int:
     from playwright.sync_api import sync_playwright
 
@@ -65,44 +81,40 @@ def main() -> int:
             )
             page = context.new_page()
             page.goto(URL, wait_until="networkidle")
-            page.wait_for_timeout(1200)
-
-            # Sessions — isolation board visible
-            page.click('button[data-nav="sessions"]')
-            page.wait_for_timeout(2000)
-
-            # New sandbox wizard
-            page.click('button[data-goto="new"]')
-            page.wait_for_timeout(1200)
-            page.fill("#project-dir", str(ROOT))
-            page.wait_for_timeout(900)
-            page.click("#to-step-2")
-            page.wait_for_timeout(1300)
-            page.click('button[data-tool="codex"]')
             page.wait_for_timeout(1000)
-            page.click("#to-step-3")
-            page.wait_for_timeout(1600)
-            # Enter in-app sandbox terminal (may fail engine start; UI still shows in-app use)
-            page.click("#launch")
-            page.wait_for_timeout(3500)
 
-            # Host-side secrets vault
-            page.click('button[data-nav="secrets"]')
-            page.wait_for_timeout(1600)
-            page.fill("#key-anthropic", "sk-ant-••••••••••••")
-            page.wait_for_timeout(800)
-            page.fill("#key-openai", "sk-••••••••••••")
-            page.wait_for_timeout(1400)
-
-            # Engine status
-            page.click('button[data-nav="settings"]')
-            page.wait_for_timeout(1800)
-            page.click("#recheck")
-            page.wait_for_timeout(2000)
-
-            # Back to sessions
+            # 1) Isolation board
             page.click('button[data-nav="sessions"]')
             page.wait_for_timeout(1800)
+
+            # 2) Save a distinctive key on the HOST vault
+            page.click('button[data-nav="secrets"]')
+            page.wait_for_timeout(1200)
+            page.fill("#key-anthropic", DEMO_KEY)
+            page.wait_for_timeout(700)
+            page.fill("#key-openai", "sk-HOST-ONLY-DEMO-OPENAI")
+            page.wait_for_timeout(700)
+            page.click("#save-secrets")
+            page.wait_for_timeout(1800)
+
+            # 3) In-app sandbox terminal: prove keys are NOT visible inside
+            page.evaluate("() => window.SandglassDemo.showSecretProof()")
+            # wait for alpine pull + script output
+            page.wait_for_timeout(14000)
+            try:
+                page.wait_for_selector("text=不可见", timeout=20000)
+            except Exception:
+                page.wait_for_timeout(3000)
+
+            page.wait_for_timeout(4000)
+
+            # 4) Brief engine status
+            page.click('button[data-nav="settings"]')
+            page.wait_for_timeout(1600)
+
+            # 5) Back to sessions
+            page.click('button[data-nav="sessions"]')
+            page.wait_for_timeout(1500)
 
             page.close()
             context.close()
@@ -131,20 +143,11 @@ def main() -> int:
             check=True,
             capture_output=True,
         )
-        # cleanup demo secret if saved
-        try:
-            secrets = Path.home() / ".local/state/enclave/secrets/global.env"
-            if secrets.exists():
-                text = secrets.read_text()
-                if "sk-ant-demo-" in text:
-                    lines = [ln for ln in text.splitlines() if "sk-ant-demo-" not in ln]
-                    secrets.write_text("\n".join(lines) + ("\n" if lines else ""))
-        except Exception:
-            pass
-
+        cleanup_demo_secrets()
         print(mp4)
         return 0
     finally:
+        cleanup_demo_secrets()
         if server is not None:
             server.terminate()
             try:

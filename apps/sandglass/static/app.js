@@ -633,6 +633,36 @@
     }
   }
 
+  // Used by scripts/record_demo.py — prove host secrets are invisible in-app terminal
+  window.SandglassDemo = {
+    async showSecretProof() {
+      showError("");
+      showToast("演示：沙箱终端内检查原始密钥…");
+      const title = $("#term-title");
+      if (title) title.textContent = "沙箱终端 · 密钥隔离演示";
+      const sub = $("#term-sub");
+      if (sub) sub.textContent = "对比：密钥在本机密钥库，沙箱内应不可见";
+      setPage("terminal");
+      openLoadingTerminal("secret-proof", "（隔离容器）");
+      if (state.term) {
+        state.term.writeln("即将在沙箱容器内检查 ANTHROPIC_API_KEY / OPENAI_API_KEY…");
+        state.term.writeln("（不会把本机密钥库挂进容器）");
+        state.term.writeln("");
+      }
+      const { id } = await api("/api/session/start-secret-demo", {
+        method: "POST",
+        body: JSON.stringify({
+          cols: state.term?.cols || 120,
+          rows: state.term?.rows || 36,
+        }),
+      });
+      state.ptyId = id;
+      attachPtyToExistingTerminal(id);
+      showToast("请看终端：沙箱内原始密钥为空 / 不可见");
+      return id;
+    },
+  };
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);
   } else {

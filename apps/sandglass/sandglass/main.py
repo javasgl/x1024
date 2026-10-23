@@ -115,6 +115,21 @@ def api_start(body: StartBody) -> dict[str, str]:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+class SecretDemoBody(BaseModel):
+    cols: int = 120
+    rows: int = 36
+
+
+@app.post("/api/session/start-secret-demo")
+def api_start_secret_demo(body: SecretDemoBody) -> dict[str, str]:
+    """In-app terminal demo: prove host API keys are not visible inside the sandbox."""
+    try:
+        sid = ptys.start_secret_proof(body.cols, body.rows)
+        return {"id": sid}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @app.post("/api/session/{sid}/kill")
 def api_kill(sid: str) -> dict[str, str]:
     ptys.kill(sid)
