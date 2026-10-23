@@ -39,7 +39,7 @@
             <button class="btn" data-goto="new">在沙箱中打开项目</button>
           </div>
           <div id="ready-warn" class="notice warn hidden" style="margin-bottom: 16px">
-            环境未就绪。请到「状态」页按提示安装 Docker / Enclave。
+            环境未就绪。请到「状态」页安装并启动 Colima（轻量容器）与 Enclave。
           </div>
           <div class="panel session-grid" id="session-list">
             <div class="empty">暂无运行中的会话。</div>
@@ -121,9 +121,12 @@
           <div class="page-head">
             <div>
               <h1>状态</h1>
-              <p>启动沙箱前需要本机 Docker 与 Enclave CLI。</p>
+              <p>正式版自带沙箱引擎。开发期可点「启动 Colima」，或先运行 prepare_runtime 脚本。</p>
             </div>
-            <button class="btn secondary" id="recheck">重新检测</button>
+            <div class="row-actions">
+              <button class="btn" id="start-colima">启动 Colima</button>
+              <button class="btn secondary" id="recheck">重新检测</button>
+            </div>
           </div>
           <div class="panel health-list" id="health-list"></div>
         </section>

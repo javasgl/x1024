@@ -134,6 +134,13 @@
     });
   }
 
+  function runtimeLabel(kind) {
+    if (kind === "colima") return "Colima（推荐）";
+    if (kind === "docker") return "Docker 引擎";
+    if (kind === "podman") return "Podman";
+    return "容器运行时";
+  }
+
   function renderHealth() {
     const h = state.health;
     const box = $("#health-list");
@@ -141,9 +148,15 @@
       box.innerHTML = `<div class="empty">检测中…</div>`;
       return;
     }
+    const kind = h.runtimeKind || "none";
+    const engineMode = h.engineMode === "bundled" ? "内置引擎" : "开发机系统工具";
     box.innerHTML = `
       <div class="health-row ${h.dockerOk ? "ok" : "bad"}">
-        <div><strong>Docker</strong><div class="meta">${h.dockerMessage || ""}</div></div>
+        <div>
+          <strong>${runtimeLabel(kind)}</strong>
+          <div class="meta">${h.dockerMessage || ""}</div>
+          <div class="meta">引擎来源：${engineMode} · Colima：${h.colimaInstalled ? (h.colimaRunning ? "运行中" : "未运行") : "未安装"}</div>
+        </div>
         <span class="badge ${h.dockerOk ? "" : "warn"}">${h.dockerOk ? "就绪" : "未就绪"}</span>
       </div>
       <div class="health-row ${h.enclaveOk ? "ok" : "bad"}">
@@ -339,6 +352,22 @@
     }
   };
   $("#recheck").onclick = () => refreshHealth();
+  $("#start-colima").onclick = async () => {
+    showError("");
+    const btn = $("#start-colima");
+    btn.disabled = true;
+    btn.textContent = "启动中…";
+    try {
+      const res = await api("/api/runtime/ensure-colima", { method: "POST", body: "{}" });
+      if (!res.ok) showError(res.message || "Colima 启动失败");
+      await refreshHealth();
+    } catch (e) {
+      showError(String(e.message || e));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "启动 Colima";
+    }
+  };
   $("#kill-term").onclick = async () => {
     if (state.ptyId) {
       try {

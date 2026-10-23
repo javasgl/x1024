@@ -1,44 +1,46 @@
 # Sandglass
 
-桌面级 Agent 安全沙箱 MVP：友好 UI 包装 **Eclipse Enclave**（Docker 隔离）。
+**自带沙箱引擎的桌面 App**：双击即用，用户不必自行安装 Docker Desktop / Colima / Enclave。
 
-当前可运行实现是 **Python**（不依赖 Rust / npm 构建）。
+产品说明见 [docs/PRODUCT.md](docs/PRODUCT.md)。
 
-## 本机依赖
+## V1 引擎（打进 App）
 
-1. **Python 3.10+**
-2. **Docker Desktop**（运行中）
-3. **Enclave CLI**（可选，缺了也能打开 UI 看状态页）
-   ```bash
-   brew install eclipse-enclave
-   ```
+- **Eclipse Enclave** — Agent 容器沙箱  
+- **Colima** — 轻量无头容器引擎（替代 Docker Desktop）  
+- **docker CLI** — 供 Enclave 调用  
 
-## 5 分钟 Demo
+## 开发
 
 ```bash
+# 可选：把本机 brew 安装的引擎拷进 App runtime/（模拟「内置」）
+./scripts/prepare_runtime_macos.sh
+
 cd apps/sandglass
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# 浏览器调试
 python run.py
+
+# 桌面窗口（接近分发形态；启动时尝试自动拉起 Colima）
+python run_desktop.py
 ```
 
-浏览器打开：**http://127.0.0.1:8765**
+打开后走：状态 → 密钥 → 新建会话。
 
-1. **状态** — 确认 Docker / Enclave  
-2. **密钥** — 写入 Anthropic / OpenAI Key（存本机 `~/.local/state/enclave/secrets/global.env`）  
-3. **新建** — 选项目目录 → 选 Agent → 启动  
-4. 内嵌终端与 Agent 交互；**会话**列表可停止  
+## 分发路线图
 
-## 安全模型（MVP）
-
-- Agent 跑在 Enclave 容器内  
-- API Key 写在宿主机 secrets，不要求在沙箱内粘贴  
-- MCP 宿主机桥接为后续迭代  
+1. **现在** — UI + 引擎编排；开发机可用系统 Colima，或 `prepare_runtime` 模拟内置  
+2. **下一步** — PyInstaller / Briefcase 打成 macOS `.app`，`runtime/` 打进 Resources  
+3. **再下一步** — 预置 Lima VM 镜像，真正做到首次双击也无需再下载  
 
 ## 目录
 
 ```
-apps/sandglass/     ← 当前 MVP（Python + FastAPI）
-apps/desktop/       ← 早期 Tauri 草稿（需较新 Rust，暂搁置）
+apps/sandglass/     Python UI + 引擎 bootstrap
+docs/PRODUCT.md     产品形态
+scripts/            打包/准备运行时
+apps/desktop/       搁置的 Tauri 草稿
 ```

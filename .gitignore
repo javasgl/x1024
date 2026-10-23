@@ -6,3 +6,4 @@
 **/dist/
 **/src-tauri/target/
 *.egg-info/
+apps/sandglass/runtime/

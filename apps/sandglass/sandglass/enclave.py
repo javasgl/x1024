@@ -6,6 +6,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Any
 
+from .runtime import detect_runtime
+
 
 @dataclass
 class HealthStatus:
@@ -14,6 +16,9 @@ class HealthStatus:
     enclave_path: str | None
     docker_ok: bool
     docker_message: str
+    runtime_kind: str
+    colima_installed: bool
+    colima_running: bool
     ready: bool
     hints: list[str]
 
@@ -24,6 +29,9 @@ class HealthStatus:
             "enclavePath": self.enclave_path,
             "dockerOk": self.docker_ok,
             "dockerMessage": self.docker_message,
+            "runtimeKind": self.runtime_kind,
+            "colimaInstalled": self.colima_installed,
+            "colimaRunning": self.colima_running,
             "ready": self.ready,
             "hints": self.hints,
         }
@@ -70,33 +78,19 @@ def check_health() -> HealthStatus:
         except Exception as e:  # noqa: BLE001
             hints.append(f"无法执行 enclave: {e}")
 
-    docker_ok = False
-    docker_message = "未找到 docker"
-    if shutil.which("docker"):
-        try:
-            out = _run(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=3)
-            if out.returncode == 0:
-                docker_ok = True
-                docker_message = f"Docker {out.stdout.strip()}"
-            else:
-                docker_message = f"Docker 未就绪: {out.stderr.strip()}"
-                hints.append("请启动 Docker Desktop")
-        except subprocess.TimeoutExpired:
-            docker_message = "Docker 无响应（请确认 Docker Desktop 已启动）"
-            hints.append("请启动 Docker Desktop")
-        except Exception as e:  # noqa: BLE001
-            docker_message = str(e)
-            hints.append("请启动 Docker Desktop")
-    else:
-        hints.append("未找到 docker，请安装 Docker Desktop")
+    rt = detect_runtime()
+    hints.extend(rt.hints)
 
     return HealthStatus(
         enclave_ok=enclave_ok,
         enclave_version=version,
         enclave_path=path,
-        docker_ok=docker_ok,
-        docker_message=docker_message,
-        ready=enclave_ok and docker_ok,
+        docker_ok=rt.ready,
+        docker_message=rt.message,
+        runtime_kind=rt.kind,
+        colima_installed=rt.colima_installed,
+        colima_running=rt.colima_running,
+        ready=enclave_ok and rt.ready,
         hints=hints,
     )
 

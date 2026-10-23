@@ -11,7 +11,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from . import enclave, secrets
+from .bootstrap import prepare_engine
+from .paths import has_bundled_runtime, prepend_bundled_path
 from .pty_session import PtyManager
+from .runtime import ensure_colima
+
+# Prefer App-bundled engine binaries when present
+prepend_bundled_path()
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "static"
@@ -38,7 +44,22 @@ class StartBody(BaseModel):
 
 @app.get("/api/health")
 def api_health() -> dict[str, Any]:
-    return enclave.check_health().to_dict()
+    data = enclave.check_health().to_dict()
+    data["engineMode"] = "bundled" if has_bundled_runtime() else "system"
+    return data
+
+
+@app.post("/api/runtime/ensure-colima")
+def api_ensure_colima() -> dict[str, Any]:
+    """Start Colima (bundled or system)."""
+    prepend_bundled_path()
+    return ensure_colima()
+
+
+@app.post("/api/runtime/prepare")
+def api_prepare_engine() -> dict[str, Any]:
+    """Desktop startup: use bundled PATH and auto-start Colima if needed."""
+    return prepare_engine()
 
 
 @app.get("/api/sessions")
